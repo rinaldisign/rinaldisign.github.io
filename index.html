@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rinaldisign</title>
+
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="hero">
+
+<div class="overlay"></div>
+
+<div class="content">
+
+<h1>RINALDISIGN</h1>
+
+<p>
+I’m an Indonesian architect and self-taught composer based in Japan.
+My project Desain Nada (“Designing a Note”) blends piano with meditative ambient textures.
+Each note is shaped like space, with silence and resonance as structure.
+</p>
+
+<div class="logo-circle">
+
+<img class="enso" src="img/enso.png">
+
+<img class="logo" src="img/logo.png">
+
+
+</div>
+
+<div class="platforms">
+
+<a href="https://open.spotify.com/artist/2O45H4AWtmX8EDWWq05Ckm?si=zA5HcMbxSo2KHM7HuwMPVQ"  target="_blank">
+<img src="img/spotify.png">
+<span>Spotify</span>
+</a>
+
+<a href="https://music.apple.com/jp/artist/rinaldisign/1877085689"  target="_blank">
+<img src="img/applemusic.png">
+<span>Apple Music</span>
+</a>
+
+<a href="https://on.soundcloud.com/Rct2djnP5CDD4gYI50"  target="_blank">
+<img src="img/soundcloud.png">
+<span>SoundCloud</span>
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+<div id="fireflies"></div>
+
+<script>
+const fireflyCount = 60; // jumlah kunang-kunang
+const firefliesContainer = document.getElementById('fireflies');
+
+for (let i = 0; i < fireflyCount; i++) {
+  const f = document.createElement('div');
+  f.classList.add('firefly');
+
+  // ukuran acak 2px - 6px
+  const size = 2 + Math.random() * 4;
+  f.style.width = size + 'px';
+  f.style.height = size + 'px';
+
+  resetFirefly(f);
+  firefliesContainer.appendChild(f);
+  animateFirefly(f);
+}
+
+function resetFirefly(f) {
+  f.style.left = Math.random() * window.innerWidth + 'px';
+  f.style.top = Math.random() * window.innerHeight + 'px';
+  f.style.opacity = 0.3 + Math.random() * 0.7;
+  f.speedX = (Math.random() - 0.5) * 0.7;
+  f.speedY = (Math.random() - 0.5) * 0.7;
+  f.scale = 0.5 + Math.random() * 0.5; // variasi skala
+}
+
+function animateFirefly(f) {
+  function move() {
+    let x = parseFloat(f.style.left);
+    let y = parseFloat(f.style.top);
+
+    x += f.speedX;
+    y += f.speedY;
+
+    // reset posisi jika keluar layar
+    if (x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) {
+      resetFirefly(f);
+      x = parseFloat(f.style.left);
+      y = parseFloat(f.style.top);
+    }
+
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+
+    // efek berkedip alami
+    const opacity = 0.3 + Math.random() * 0.7;
+    f.style.opacity = opacity;
+
+    // efek variasi skala
+    f.style.transform = `scale(${f.scale})`;
+
+    requestAnimationFrame(move);
+  }
+  move();
+}
+</script>
+
+</body>
+
+</html>
