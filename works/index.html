@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Composition List</title>
+
+<style>
+
+body{
+margin:0;
+font-family:serif;
+color:white;
+background:url("../img/background.jpg") center/cover no-repeat fixed;
+}
+
+/* HOME BUTTON */
+
+.home{
+position:fixed;
+top:30px;
+left:30px;
+text-decoration:none;
+color:white;
+border:1px solid white;
+padding:8px 16px;
+font-size:14px;
+transition:0.3s;
+}
+
+.home:hover{
+background:white;
+color:black;
+}
+
+/* MAIN CONTAINER */
+
+.container{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+text-align:center;
+}
+
+/* TITLE */
+
+h1{
+font-weight:normal;
+letter-spacing:2px;
+font-size:36px;
+}
+
+.line{
+width:200px;
+height:1px;
+background:white;
+margin:20px auto;
+opacity:0.6;
+}
+
+/* LIST */
+
+.list a{
+display:block;
+color:white;
+text-decoration:none;
+margin:12px;
+font-size:22px;
+transition:0.3s;
+cursor:pointer;
+}
+
+.list a:hover{
+opacity:0.6;
+}
+
+/* POPUP */
+
+.popup{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.95);
+display:flex;
+justify-content:center;
+align-items:center;
+opacity:0;
+visibility:hidden;
+transition:0.4s;
+}
+
+.popup.active{
+opacity:1;
+visibility:visible;
+}
+
+.popup-content{
+max-width:600px;
+text-align:center;
+padding:40px;
+}
+
+.popup-content h2{
+font-weight:normal;
+letter-spacing:1px;
+}
+
+.popup-content p{
+line-height:1.6;
+opacity:0.9;
+}
+
+.close{
+margin-top:30px;
+cursor:pointer;
+border:1px solid white;
+padding:10px 20px;
+display:inline-block;
+transition:0.3s;
+}
+
+.close:hover{
+background:white;
+color:black;
+}
+
+/* MOBILE */
+
+@media (max-width:768px){
+
+.container{
+width:90%;
+}
+
+h1{
+font-size:28px;
+}
+
+.list a{
+font-size:18px;
+}
+
+.popup-content{
+padding:25px;
+}
+
+.home{
+top:20px;
+left:20px;
+font-size:12px;
+padding:6px 10px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<a class="home" href="/">HOME</a>
+
+<div class="container">
+
+<h1>Composition List</h1>
+
+<div class="line"></div>
+
+<div class="list">
+
+<a onclick="openPopup('p1')">DN.1 Lumin Forest</a>
+<a onclick="openPopup('p2')">DN.2 Solastalgia</a>
+
+</div>
+
+</div>
+
+<!-- POPUP 1 -->
+
+<div id="p1" class="popup">
+<div class="popup-content">
+
+<h2>Lumin Forest</h2>
+
+<p>
+A quiet piano composition inspired by the depth of forest light.
+The piece moves slowly, allowing silence and resonance to create space and atmosphere.
+</p>
+
+<div class="close" onclick="closePopup()">Close</div>
+
+</div>
+</div>
+
+<!-- POPUP 2 -->
+
+<div id="p2" class="popup">
+<div class="popup-content">
+
+<h2>Solastalgia</h2>
+
+<p>
+A reflective piece exploring emotional distance and nostalgia.
+Soft harmonic motion creates a fragile and contemplative musical space.
+</p>
+
+<div class="close" onclick="closePopup()">Close</div>
+
+</div>
+</div>
+
+<script>
+
+function openPopup(id){
+document.getElementById(id).classList.add("active");
+}
+
+function closePopup(){
+document.querySelectorAll(".popup").forEach(p=>{
+p.classList.remove("active");
+});
+}
+
+</script>
+
+</body>
+
+</html>
