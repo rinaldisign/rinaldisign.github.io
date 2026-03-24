@@ -14,6 +14,12 @@
 
 </head>
 
+<div id="opening">
+  <div class="opening-content">
+    <img src="img/logo.png" alt="Logo" />
+  </div>
+</div>
+  
 <body>
 
 <div class="hero">
@@ -136,6 +142,33 @@ function animateFirefly(f) {
 }
 </script>
 
+<script>
+  // hanya tampil sekali per session
+  if (!sessionStorage.getItem("openingShown")) {
+
+    window.addEventListener("load", function() {
+      setTimeout(function() {
+        const opening = document.getElementById("opening");
+        opening.style.opacity = "0";
+
+        setTimeout(() => {
+          opening.style.display = "none";
+        }, 1000);
+
+      }, 2000); // durasi tampil
+    });
+
+    sessionStorage.setItem("openingShown", "true");
+
+  } else {
+    // langsung skip opening
+    document.addEventListener("DOMContentLoaded", function() {
+      const opening = document.getElementById("opening");
+      if (opening) opening.style.display = "none";
+    });
+  }
+</script>
+  
 </body>
 
 </html>
