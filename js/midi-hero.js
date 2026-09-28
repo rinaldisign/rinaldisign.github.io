@@ -157,8 +157,8 @@ for(let n=21;n<=108;n++){
 scene.add(kbGroup);
 
 /* ---------- ground: jaring tipis, transparan, tepi memudar (radial) ---------- */
-const GRID_STEP = 2, GRID_HALF_X = 90, GRID_Z0 = -150, GRID_Z1 = 60;
-const GRID_CX = 0, GRID_CZ = (GRID_Z0+GRID_Z1)/2, GRID_R = 88, GRID_ALPHA = 0.16;
+const GRID_STEP = 4, GRID_HALF_X = 90, GRID_Z0 = -150, GRID_Z1 = 60;
+const GRID_CX = 0, GRID_CZ = (GRID_Z0+GRID_Z1)/2, GRID_R = 88, GRID_ALPHA = 0.08;
 (function buildGrid(){
   const pos = [], alp = [];
   const fade = (x,z)=>{
@@ -178,7 +178,7 @@ const GRID_CX = 0, GRID_CZ = (GRID_Z0+GRID_Z1)/2, GRID_R = 88, GRID_ALPHA = 0.16
   geo.setAttribute('aAlpha', new THREE.Float32BufferAttribute(alp,1));
   const mat = new THREE.ShaderMaterial({
     transparent:true, depthWrite:false,
-    uniforms:{ uColor:{value:new THREE.Color(0xb8ffc8)}, uOpacity:{value:GRID_ALPHA} },
+    uniforms:{ uColor:{value:new THREE.Color(0x5c8f6b)}, uOpacity:{value:GRID_ALPHA} },
     vertexShader:'attribute float aAlpha; varying float vA; void main(){ vA=aAlpha; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
     fragmentShader:'uniform vec3 uColor; uniform float uOpacity; varying float vA; void main(){ gl_FragColor=vec4(uColor, uOpacity*vA); }'
   });
