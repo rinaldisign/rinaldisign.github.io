@@ -113,13 +113,17 @@ stage.appendChild(renderer.domElement);
 
 let camDist = 34, camYaw = 0, camPitch = 0.55;
 const DIST_MIN = 16, DIST_MAX = 90;
+const CAM_TARGET = new THREE.Vector3(0, 2, -6);
 function updateCamera(){
+  // offset kamera relatif ke target; diputar (yaw) mengelilingi sumbu Y target
+  const offY = 8 + camDist*Math.sin(camPitch);
+  const offR = camDist*Math.cos(camPitch) - camDist*0.15 + 20;
   camera.position.set(
-    Math.sin(camYaw)*camDist*Math.cos(camPitch),
-    10 + camDist*Math.sin(camPitch),
-    Math.cos(camYaw)*camDist*Math.cos(camPitch) - camDist*0.15 + 14
+    CAM_TARGET.x + Math.sin(camYaw)*offR,
+    CAM_TARGET.y + offY,
+    CAM_TARGET.z + Math.cos(camYaw)*offR
   );
-  camera.lookAt(0, 2, -6);
+  camera.lookAt(CAM_TARGET);
 }
 function resize(){
   const w = stage.clientWidth || innerWidth, h = stage.clientHeight || innerHeight;
@@ -152,6 +156,37 @@ for(let n=21;n<=108;n++){
 }
 scene.add(kbGroup);
 
+/* ---------- ground: jaring tipis, transparan, tepi memudar (radial) ---------- */
+const GRID_STEP = 2, GRID_HALF_X = 90, GRID_Z0 = -150, GRID_Z1 = 60;
+const GRID_CX = 0, GRID_CZ = (GRID_Z0+GRID_Z1)/2, GRID_R = 88, GRID_ALPHA = 0.16;
+(function buildGrid(){
+  const pos = [], alp = [];
+  const fade = (x,z)=>{
+    const d = Math.hypot(x-GRID_CX, (z-GRID_CZ)*0.85) / GRID_R;      // 0 di tengah, 1 di tepi
+    const t = Math.min(1, Math.max(0, (d-0.25)/0.75));
+    return 1 - t*t*(3-2*t);                                          // smoothstep terbalik
+  };
+  const seg = (x0,z0,x1,z1)=>{
+    pos.push(x0,0,z0, x1,0,z1); alp.push(fade(x0,z0), fade(x1,z1));
+  };
+  for(let z=GRID_Z0; z<=GRID_Z1; z+=GRID_STEP)
+    for(let x=-GRID_HALF_X; x<GRID_HALF_X; x+=GRID_STEP) seg(x,z,x+GRID_STEP,z);
+  for(let x=-GRID_HALF_X; x<=GRID_HALF_X; x+=GRID_STEP)
+    for(let z=GRID_Z0; z<GRID_Z1; z+=GRID_STEP) seg(x,z,x,z+GRID_STEP);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('aAlpha', new THREE.Float32BufferAttribute(alp,1));
+  const mat = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false,
+    uniforms:{ uColor:{value:new THREE.Color(0xb8ffc8)}, uOpacity:{value:GRID_ALPHA} },
+    vertexShader:'attribute float aAlpha; varying float vA; void main(){ vA=aAlpha; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:'uniform vec3 uColor; uniform float uOpacity; varying float vA; void main(){ gl_FragColor=vec4(uColor, uOpacity*vA); }'
+  });
+  const grid = new THREE.LineSegments(geo, mat);
+  grid.position.y = -0.02; grid.renderOrder = -1;
+  scene.add(grid);
+})();
+
 /* bar hijau neon + 2 lapis glow additive */
 const barGeo = new THREE.BoxGeometry(1,1,1);
 const barMat = new THREE.MeshStandardMaterial({color:NEON, emissive:NEON, emissiveIntensity:0.9, roughness:.3, metalness:0});
@@ -177,23 +212,61 @@ function buildNoteMeshes(notes){
   }
 }
 
-/* ---------- orbit & zoom ---------- */
-let dragging=false, lx=0, ly=0;
-stage.addEventListener('pointerdown', e=>{ dragging=true; lx=e.clientX; ly=e.clientY; });
-addEventListener('pointerup', ()=>dragging=false);
+/* ---------- orbit, zoom (wheel & pinch), auto-rotate ---------- */
+let dragging=false, lx=0, ly=0, pinchDist=0;
+let lastInput = -1e9;                 // waktu interaksi terakhir (detik)
+const touchNow = ()=>{ lastInput = performance.now()/1000; };
+stage.addEventListener('pointerdown', e=>{
+  if(pinchDist) return;
+  dragging=true; lx=e.clientX; ly=e.clientY; touchNow();
+});
+addEventListener('pointerup', ()=>{ dragging=false; touchNow(); });
+addEventListener('pointercancel', ()=>{ dragging=false; });
 addEventListener('pointermove', e=>{
-  if(!dragging) return;
-  camYaw += (e.clientX-lx)*0.004;
+  if(!dragging || pinchDist) return;
+  camYaw -= (e.clientX-lx)*0.004;   // geser ke kanan → scene ikut berputar ke kanan
   camPitch = Math.min(1.1, Math.max(0.18, camPitch + (e.clientY-ly)*0.003));
-  lx=e.clientX; ly=e.clientY; updateCamera();
+  lx=e.clientX; ly=e.clientY; touchNow(); updateCamera();
 });
 stage.addEventListener('wheel', e=>{
   // di batas zoom-out, biarkan scroll halaman lewat
   if(e.deltaY > 0 && camDist >= DIST_MAX) return;
-  e.preventDefault();
+  e.preventDefault(); touchNow();
   camDist = Math.min(DIST_MAX, Math.max(DIST_MIN, camDist + e.deltaY*0.03));
   updateCamera();
 }, {passive:false});
+
+// pinch dua jari (mobile)
+const tDist = t => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+stage.addEventListener('touchstart', e=>{
+  if(e.touches.length === 2){ pinchDist = tDist(e.touches); dragging = false; touchNow(); e.preventDefault(); }
+}, {passive:false});
+stage.addEventListener('touchmove', e=>{
+  if(e.touches.length !== 2 || !pinchDist) return;
+  e.preventDefault(); touchNow();
+  const d = tDist(e.touches);
+  if(d > 0){
+    camDist = Math.min(DIST_MAX, Math.max(DIST_MIN, camDist * pinchDist / d));
+    pinchDist = d; updateCamera();
+  }
+}, {passive:false});
+const endTouch = e=>{ if(e.touches.length < 2) pinchDist = 0; touchNow(); };
+stage.addEventListener('touchend', endTouch);
+stage.addEventListener('touchcancel', endTouch);
+
+// auto-rotate: pelan & halus saat lagu diputar; berhenti saat disentuh, lanjut perlahan setelah dilepas
+const AUTO_SPEED = 0.07;      // rad/detik
+const AUTO_LIMIT = 0.9;       // ayunan ± rad dari depan (Infinity = putar penuh 360°)
+const AUTO_RESUME = 1.5;      // detik jeda setelah interaksi terakhir
+const AUTO_EASE = 1.2;        // makin besar = akselerasi/pengereman makin cepat
+let autoVel = 0, autoDir = 1, lastFrame = performance.now()/1000;
+function stepAutoRotate(dt){
+  const idle = !dragging && !pinchDist && (performance.now()/1000 - lastInput) > AUTO_RESUME;
+  if(camYaw > AUTO_LIMIT) autoDir = -1; else if(camYaw < -AUTO_LIMIT) autoDir = 1;
+  const target = (playing && idle) ? AUTO_SPEED*autoDir : 0;
+  autoVel += (target - autoVel) * (1 - Math.exp(-AUTO_EASE*dt));
+  if(Math.abs(autoVel) > 1e-5){ camYaw += autoVel*dt; updateCamera(); }
+}
 
 /* ---------- audio: Salamander Grand Piano (CC BY 3.0, Alexander Holm) ---------- */
 let actx = null;
@@ -415,6 +488,8 @@ const keyUpD = {true:0.06, false:0.05};
 
 function frame(){
   requestAnimationFrame(frame);
+  const nowS = performance.now()/1000, dtF = Math.min(0.1, nowS-lastFrame); lastFrame = nowS;
+  stepAutoRotate(dtF);
   let t = pausedAt;
   if(playing && actx){
     t = actx.currentTime - playStart;
