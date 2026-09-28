@@ -204,16 +204,37 @@ const sampleBuffers = {};
 const sampleMidiFor = n => n + ((n%12)%3===0 ? 0 : ((n%12)%3===1 ? -1 : 1));
 const sampleNameFor = s => SAMPLE_LETTER[s%12] + (Math.floor(s/12)-1);
 
-async function loadSamplesForNotes(notes){
+async function fetchSample(url){
+  for(let i=0;i<3;i++){
+    try{
+      const ctrl = new AbortController(), to = setTimeout(()=>ctrl.abort(), 20000);
+      const r = await fetch(url, {signal:ctrl.signal}); clearTimeout(to);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await decodeCtx.decodeAudioData(await r.arrayBuffer());
+    }catch(e){ if(i===2) return null; await new Promise(r=>setTimeout(r, 400*(i+1))); }
+  }
+}
+async function loadSamplesForNotes(notes, onProgress){
   const needed = new Set(notes.map(n=>sampleMidiFor(n.note)));
-  const tasks = [];
+  const jobs = [];
   for(const s of needed) for(const L of LAYERS){
     const key = L.tag+'|'+s;
     if(sampleBuffers[key]) continue;
-    const url = `https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity${L.tag}/audio/${encodeURIComponent(sampleNameFor(s))}v${L.tag}.mp3`;
-    tasks.push(fetch(url).then(r=>r.arrayBuffer()).then(ab=>decodeCtx.decodeAudioData(ab)).then(b=>{sampleBuffers[key]=b;}).catch(()=>{}));
+    jobs.push({key, url:`https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity${L.tag}/audio/${encodeURIComponent(sampleNameFor(s))}v${L.tag}.mp3`});
   }
-  await Promise.all(tasks);
+  let done = 0, failed = 0; const total = jobs.length;
+  if(onProgress) onProgress(0, total);
+  let idx = 0;
+  const worker = async ()=>{
+    while(idx < jobs.length){
+      const j = jobs[idx++];
+      const b = await fetchSample(j.url);
+      if(b) sampleBuffers[j.key] = b; else failed++;
+      done++; if(onProgress) onProgress(done, total);
+    }
+  };
+  await Promise.all(Array.from({length:6}, worker));
+  return {total, failed};
 }
 function scheduleNote(note, when){
   if(!actx) return;
@@ -241,6 +262,7 @@ function scheduleNote(note, when){
 
 /* ---------- playback ---------- */
 let notes = [], total = 0, playing = false, ready = false, loop = false;
+let loadState = 'idle', autoPlay = false, currentW = null; // idle | loading | error
 let playStart = 0, pausedAt = 0, startPtr = 0, schedPtr = 0;
 const activeSet = new Set();
 const AHEAD = 1.2;
@@ -257,7 +279,9 @@ function schedTick(t){
 }
 function killAudio(){ if(actx){ actx.close(); actx = null; } }
 function play(){
-  if(!ready) return;
+  if(loadState === 'error' && currentRow){ const r = currentRow; currentRow = null; autoPlay = true; select(currentW, r); return; }
+  if(!ready){ autoPlay = true; syncBtn(); return; }
+  autoPlay = false;
   if(pausedAt >= total-0.05) pausedAt = 0;
   actx = actx || new (window.AudioContext||window.webkitAudioContext)();
   if(actx.state === 'suspended') actx.resume();
@@ -268,6 +292,7 @@ function play(){
   schedTick(pausedAt); syncBtn();
 }
 function pause(){
+  autoPlay = false;
   if(actx) pausedAt = actx.currentTime - playStart;
   playing = false; killAudio(); syncBtn();
 }
@@ -285,6 +310,7 @@ const statusEl = document.getElementById('mvStatus');
 const slug = c => (c||'').replace(/[^a-zA-Z0-9]/g,'').toLowerCase();
 const ICON_PLAY = '<svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 12 12"><path d="M2.5 1.5h2.6v9H2.5zM6.9 1.5h2.6v9H6.9z"/></svg>';
+const ICON_LOAD = '<svg class="spin" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.2"/></svg>';
 const ICON_REP = '<svg viewBox="0 0 12 12"><path d="M2 5.5V5a2 2 0 0 1 2-2h6M8.5 1.2 10.2 3 8.5 4.8M10 6.5V7a2 2 0 0 1-2 2H2M3.5 10.8 1.8 9l1.7-1.8"/></svg>';
 
 const ctl = document.createElement('span'); ctl.className = 'mv-ctl';
@@ -293,7 +319,23 @@ ctl.innerHTML = '<button class="pp" type="button" aria-label="Play / Pause"></bu
   + '<a class="inf" href="#" aria-label="Halaman karya">i</a>';
 const prog = document.createElement('span'); prog.className = 'mv-prog'; prog.innerHTML = '<i></i>';
 const ppBtn = ctl.querySelector('.pp'), repBtn = ctl.querySelector('.rep'), infBtn = ctl.querySelector('.inf'), progFill = prog.firstChild;
-function syncBtn(){ ppBtn.innerHTML = playing ? ICON_PAUSE : ICON_PLAY; }
+const loadEl = document.createElement('div'); loadEl.className = 'mv-loading';
+loadEl.innerHTML = '<div class="mv-load-txt"></div><div class="mv-load-bar"><i></i></div>';
+hero.appendChild(loadEl);
+const loadTxt = loadEl.firstChild, loadFill = loadEl.querySelector('i');
+function setLoad(state, msg, pct){
+  loadState = state;
+  loadEl.classList.toggle('show', state !== 'idle');
+  loadEl.classList.toggle('err', state === 'error');
+  loadTxt.textContent = msg || '';
+  if(pct !== undefined) loadFill.style.width = pct + '%';
+  statusEl.textContent = state === 'loading' ? (msg||'loading…') : state === 'error' ? 'error' : '';
+  syncBtn();
+}
+function syncBtn(){
+  ppBtn.innerHTML = loadState === 'loading' ? ICON_LOAD : (playing ? ICON_PAUSE : ICON_PLAY);
+  ppBtn.classList.toggle('busy', loadState === 'loading');
+}
 syncBtn();
 
 ppBtn.addEventListener('click', e=>{ e.stopPropagation(); playing ? pause() : play(); });
@@ -320,7 +362,7 @@ WORKS.slice().reverse().forEach(w=>{
 let token = 0, currentRow = null;
 async function select(w, row){
   if(row === currentRow) return;
-  const my = ++token;
+  const my = ++token; currentW = w;
   pause(); ready = false; pausedAt = 0; total = 0; notes = []; activeSet.clear();
   buildNoteMeshes([]);
   if(currentRow) currentRow.classList.remove('is-active');
@@ -328,7 +370,7 @@ async function select(w, row){
   row.appendChild(ctl); row.appendChild(prog);
   infBtn.href = 'w/' + slug(w.catno) + '/';
   progFill.style.width = '0%';
-  statusEl.textContent = 'loading…';
+  setLoad('loading', 'Loading MIDI…', 0);
   try{
     // coba path persis, lalu variasi huruf besar/kecil & .mid/.midi (hosting case-sensitive)
     const m = w.midi.match(/^(.*\/)?([^\/]+?)(\.[a-z]+)?$/i), dir = m[1]||'', base = m[2];
@@ -343,11 +385,17 @@ async function select(w, row){
     if(my !== token) return;
     notes = parsed.notes; total = parsed.duration;
     buildNoteMeshes(notes); resetPtrs(0);
-    await loadSamplesForNotes(notes);
+    const r = await loadSamplesForNotes(notes, (d,t)=>{
+      if(my !== token) return;
+      const pct = t ? Math.round(d/t*100) : 100;
+      setLoad('loading', 'Loading piano samples… '+pct+'%', pct);
+    });
     if(my !== token) return;
-    ready = true; statusEl.textContent = '';
+    if(r.total && r.failed > r.total*0.2) throw new Error('sample gagal dimuat ('+r.failed+'/'+r.total+') — cek koneksi, lalu tekan play untuk coba lagi');
+    ready = true; setLoad('idle');
+    if(autoPlay) play();
   }catch(err){
-    if(my === token){ statusEl.textContent = 'error'; statusEl.title = String(err && err.message || err); console.error('[midi-hero]', err); }
+    if(my === token){ setLoad('error', 'Failed to load — press play to retry'); statusEl.title = String(err && err.message || err); console.error('[midi-hero]', err); }
   }
 }
 
