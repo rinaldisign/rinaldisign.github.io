@@ -279,6 +279,7 @@ const WORKS = [
    {
     catno: "DN.22",
     title: "2Keychains",
+    midi: "midi-asset/dn22.mid",
     cover: "../img/covers/art-dn22.jpg",
     desc: "Inspired by two keychains separated by distance and time, yet somehow still connected by fate, this original piano piece was born froma feeling I cannot easily put into words.Though they remain apart, their existence still seems to belong to the same story as if destiny continues to hold an invisible thread between them.This music carries a warm and melancholic atmosphere, with a touch of mystery. A reflection of distance, time, memories, and the quiet belief that some connections may never truly disappear.",
     soundcloud: "",
