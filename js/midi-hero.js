@@ -330,8 +330,15 @@ async function select(w, row){
   progFill.style.width = '0%';
   statusEl.textContent = 'loading…';
   try{
-    const res = await fetch(w.midi);
-    if(!res.ok) throw new Error('404');
+    // coba path persis, lalu variasi huruf besar/kecil & .mid/.midi (hosting case-sensitive)
+    const m = w.midi.match(/^(.*\/)?([^\/]+?)(\.[a-z]+)?$/i), dir = m[1]||'', base = m[2];
+    const cands = [w.midi]; 
+    [base, base.toUpperCase(), base.toLowerCase()].forEach(b=>['.mid','.midi','.MID'].forEach(x=>cands.push(dir+b+x)));
+    let res = null;
+    for(const u of [...new Set(cands)]){
+      try{ const r = await fetch(u); if(r.ok){ res = r; break; } }catch(e){}
+    }
+    if(!res) throw new Error('midi tidak ditemukan: '+w.midi);
     const parsed = parseMidi(await res.arrayBuffer());
     if(my !== token) return;
     notes = parsed.notes; total = parsed.duration;
@@ -340,7 +347,7 @@ async function select(w, row){
     if(my !== token) return;
     ready = true; statusEl.textContent = '';
   }catch(err){
-    if(my === token) statusEl.textContent = 'error';
+    if(my === token){ statusEl.textContent = 'error'; statusEl.title = String(err && err.message || err); console.error('[midi-hero]', err); }
   }
 }
 
