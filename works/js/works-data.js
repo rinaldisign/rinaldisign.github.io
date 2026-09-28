@@ -13,7 +13,7 @@
      catno       -> nomor katalog, misal "DN.1"
      title       -> judul karya
      cover       -> path gambar cover (dipakai di list & popup)
-     midi        -> (opsional) path file .mid dari root situs, misal "midi/dn54.mid".
+     midi        -> (opsional) path file .mid dari root situs, misal "midi-asset/dn54.mid".
                     Kalau diisi, karya tampil bisa diputar di visualizer landing page.
      desc        -> deskripsi/cerita karya
      soundcloud  -> URL embed player SoundCloud.
@@ -628,6 +628,7 @@ const WORKS = [
     catno: "DN.54",
     title: "Beloved Waltz",
     cover: "../img/covers/art-dn54.jpg",
+    midi: "#",
     desc: "I wrote this piece thinking about the feeling of being in love when even the simplest moments feel a little more beautiful. A gentle waltz in C-sharp minor, carrying a warm sense of happiness, tenderness, and the quiet joy of having someone you truly love in your heart. 8/2026",
     soundcloud: "",
     musescore: "https://musescore.com/user/118322597/scores/37069763",
@@ -639,7 +640,7 @@ const WORKS = [
     catno: "DN.55",
     title: "Dearest Waltz",
     cover: "../img/covers/art-dn55.jpg",
-    midi: "midi/dn55.mid",
+    midi: "midi-asset/dn55.mid",
     desc: "Dearest Waltz is a gentle and flowing waltz, born unexpectedly in a quiet moment at the piano. While finishing my previous composition, Waltz DN.54, I continued to play freely, and without planning it, the melody of this waltz began to emerge.Although written in C♯ minor, Dearest Waltz carries a cheerful and warm spirit. Its melody gently dances between light and shadow, portraying the feeling of smiling above sadness not to deny it, but to embrace it with hope. Beneath its joyful character lies a message of positivity, tenderness, and affection.Dearest Waltz is a small reminder that even in moments touched by sadness, there can still be warmth in the heart, a reason to smile, and love to share. 8/2026",
     soundcloud: "",
     musescore: "https://musescore.com/user/118322597/scores/36907076",

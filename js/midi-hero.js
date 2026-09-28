@@ -1,7 +1,7 @@
 /* =========================================================
    MIDI HERO — visualizer 3D di landing page.
    Data karya diambil dari WORKS (works/js/works-data.js).
-   Tambah field  midi: "midi/xxx.mid"  di karya mana pun,
+   Tambah field  midi: "midi-asset/xxx.mid"  di karya mana pun,
    otomatis muncul & bisa diputar. File ini tidak perlu diedit.
    ========================================================= */
 (function(){
@@ -379,6 +379,9 @@ async function select(w, row){
     const cands = [w.midi]; 
     [base, base.toUpperCase(), base.toLowerCase()].forEach(b=>['.mid','.midi','.MID'].forEach(x=>cands.push(dir+b+x)));
     let res = null;
+    // cadangan: langsung dari repo GitHub (raw mengizinkan CORS) bila hosting Pages belum/tidak menyajikan file
+    const RAW = 'https://raw.githubusercontent.com/rinaldisign/rinaldisign.github.io/main/';
+    cands.push('/' + w.midi.replace(/^\/+/, ''), RAW + w.midi.replace(/^\/+/, ''));
     for(const u of [...new Set(cands)]){
       try{ const r = await fetch(u); if(r.ok){ res = r; break; } }catch(e){}
     }
