@@ -44,6 +44,7 @@ const WORKS = [
   {
     catno: "DN.1",
     title: "Lumin Forest",
+    midi: "midi-asset/dn1.mid",
     cover: "../img/covers/art-dn1.jpg",
     desc: "A quiet piano composition inspired by the depth of forest light. The piece moves slowly, allowing silence and resonance to create space and atmosphere. 2025",
     soundcloud: "",
@@ -55,6 +56,7 @@ const WORKS = [
   {
     catno: "DN.2",
     title: "Solastalgia",
+    midi: "midi-asset/dn2.mid",
     cover: "../img/covers/art-dn1.jpg",
     desc: "A reflective piece exploring emotional distance and nostalgia. Soft harmonic motion creates a fragile and contemplative musical space. 2025",
     soundcloud: "",
@@ -66,6 +68,7 @@ const WORKS = [
   {
     catno: "DN.3",
     title: "Laserila",
+    midi: "midi-asset/dn3.mid",
     cover: "../img/covers/art-dn1.jpg",
     desc: "I composed this piece on a cold night, alone at the piano. As I sat in the quietness of the night, a melody seemed to emerge from nothingness — unbidden, fragile, and melancholic. From that solitary moment, filled with sadness and quiet reflection, Laserila was born. 2025",
     soundcloud: "",
