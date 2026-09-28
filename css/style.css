@@ -997,4 +997,4 @@ footer .foot-links a:hover{ color:var(--gold-soft); }
 @keyframes mvSpin{ to{ transform:rotate(360deg); } }
 @media (max-width:860px){ .mv-loading{ bottom:calc(26vh + 100px); } }
 
-.mark-logo{ height:1.15em; width:auto; display:block; filter:brightness(0) invert(1); }
+.mark-logo{ height:18px; width:auto; max-width:none; display:block; filter:brightness(0) invert(1); }
