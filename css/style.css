@@ -105,6 +105,7 @@ body::before{
   border-bottom-color:var(--line);
 }
 .site-nav .mark{
+  display:inline-flex; align-items:center; gap:.55em;
   text-decoration:none;
   font-weight:700;
   color:var(--paper);
@@ -237,7 +238,6 @@ body::before{
 }
 
 .hero-content h1{
-  display:flex; align-items:center; gap:.4em;
   font-family:var(--font-display);
   font-weight:500;
   font-size:clamp(26px, 4.6vw, 44px);
@@ -997,4 +997,4 @@ footer .foot-links a:hover{ color:var(--gold-soft); }
 @keyframes mvSpin{ to{ transform:rotate(360deg); } }
 @media (max-width:860px){ .mv-loading{ bottom:calc(26vh + 100px); } }
 
-.hero-logo{ height:1em; width:auto; display:block; filter:brightness(0) invert(1); }
+.mark-logo{ height:1.15em; width:auto; display:block; filter:brightness(0) invert(1); }
