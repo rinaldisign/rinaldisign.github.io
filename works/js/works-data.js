@@ -91,6 +91,7 @@ const WORKS = [
   {
     catno: "DN.5",
     title: "Furnama",
+    midi: "midi-asset/dn5.mid",
     cover: "../img/covers/art-dn1.jpg",
     desc: "I feel a sense of tranquility whenever I listen to this melody. Its gentle and steady flow was created as a piece for the night, evoking the quiet atmosphere of a peaceful evening beneath the moonlight. The title Furnama is inspired by the Indonesian word for 'full moon,' symbolizing the calm and serene feeling that lies at the heart of this piece. 2025",
     soundcloud: "",
