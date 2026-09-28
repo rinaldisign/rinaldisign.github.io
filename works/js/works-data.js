@@ -628,7 +628,6 @@ const WORKS = [
     catno: "DN.54",
     title: "Beloved Waltz",
     cover: "../img/covers/art-dn54.jpg",
-    midi: "#",
     desc: "I wrote this piece thinking about the feeling of being in love when even the simplest moments feel a little more beautiful. A gentle waltz in C-sharp minor, carrying a warm sense of happiness, tenderness, and the quiet joy of having someone you truly love in your heart. 8/2026",
     soundcloud: "",
     musescore: "https://musescore.com/user/118322597/scores/37069763",
