@@ -204,37 +204,36 @@ const sampleBuffers = {};
 const sampleMidiFor = n => n + ((n%12)%3===0 ? 0 : ((n%12)%3===1 ? -1 : 1));
 const sampleNameFor = s => SAMPLE_LETTER[s%12] + (Math.floor(s/12)-1);
 
-async function fetchSample(url){
-  for(let i=0;i<3;i++){
-    try{
-      const ctrl = new AbortController(), to = setTimeout(()=>ctrl.abort(), 20000);
-      const r = await fetch(url, {signal:ctrl.signal}); clearTimeout(to);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return await decodeCtx.decodeAudioData(await r.arrayBuffer());
-    }catch(e){ if(i===2) return null; await new Promise(r=>setTimeout(r, 400*(i+1))); }
-  }
-}
+/* Sama seperti visualizer acuan: semua sample diunduh paralel dari CDN, tanpa timeout
+   & tanpa membatalkan lagu bila sebagian gagal (note tanpa sample tetap tampil visual). */
 async function loadSamplesForNotes(notes, onProgress){
   const needed = new Set(notes.map(n=>sampleMidiFor(n.note)));
   const jobs = [];
   for(const s of needed) for(const L of LAYERS){
     const key = L.tag+'|'+s;
     if(sampleBuffers[key]) continue;
-    jobs.push({key, url:`https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity${L.tag}/audio/${encodeURIComponent(sampleNameFor(s))}v${L.tag}.mp3`});
+    const nm = encodeURIComponent(sampleNameFor(s)) + 'v' + L.tag + '.mp3';
+    jobs.push({key, urls:[
+      `https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity${L.tag}/audio/${nm}`,
+      `https://unpkg.com/@audio-samples/piano-mp3-velocity${L.tag}/audio/${nm}`
+    ]});
   }
-  let done = 0, failed = 0; const total = jobs.length;
+  let done = 0; const total = jobs.length;
   if(onProgress) onProgress(0, total);
-  let idx = 0;
-  const worker = async ()=>{
-    while(idx < jobs.length){
-      const j = jobs[idx++];
-      const b = await fetchSample(j.url);
-      if(b) sampleBuffers[j.key] = b; else failed++;
-      done++; if(onProgress) onProgress(done, total);
+  await Promise.all(jobs.map(async j=>{
+    for(const url of j.urls){
+      try{
+        const r = await fetch(url);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        sampleBuffers[j.key] = await decodeCtx.decodeAudioData(await r.arrayBuffer());
+        break;
+      }catch(e){ /* coba sumber berikutnya */ }
     }
-  };
-  await Promise.all(Array.from({length:6}, worker));
-  return {total, failed};
+    done++; if(onProgress) onProgress(done, total);
+  }));
+  let missing = 0;
+  for(const s of needed) if(!LAYERS.some(L=>sampleBuffers[L.tag+'|'+s])) missing++;
+  return {total: needed.size, failed: missing};
 }
 function scheduleNote(note, when){
   if(!actx) return;
@@ -244,6 +243,8 @@ function scheduleNote(note, when){
   const tt = Math.min(1, Math.max(0, (note.vel-LAYERS[0].vel)/(LAYERS[1].vel-LAYERS[0].vel)));
   const amp = 0.18 + 0.82*(note.vel/127);
   const w = {[LAYERS[0].tag]: amp*(1-tt), [LAYERS[1].tag]: amp*tt};
+  const has0 = !!sampleBuffers[LAYERS[0].tag+'|'+s], has1 = !!sampleBuffers[LAYERS[1].tag+'|'+s];
+  if(has0 !== has1){ w[LAYERS[0].tag] = has0 ? amp : 0; w[LAYERS[1].tag] = has1 ? amp : 0; }
   const master = actx.createGain(); master.connect(actx.destination);
   for(const L of LAYERS){
     const wt = w[L.tag], buf = sampleBuffers[L.tag+'|'+s];
@@ -351,10 +352,11 @@ prog.addEventListener('click', e=>{
 const rows = [];
 WORKS.slice().reverse().forEach(w=>{
   const row = document.createElement('div');
-  row.className = 'mv-row' + (w.midi ? '' : ' is-off');
+  const hasMidi = w.midi && w.midi !== '#';
+  row.className = 'mv-row' + (hasMidi ? '' : ' is-off');
   row.innerHTML = '<span class="mv-cat">'+w.catno+'</span><span class="mv-title"></span>';
   row.querySelector('.mv-title').textContent = w.title;
-  if(w.midi) row.addEventListener('click', ()=>select(w, row));
+  if(hasMidi) row.addEventListener('click', ()=>select(w, row));
   listEl.appendChild(row);
   rows.push({w, row});
 });
@@ -391,16 +393,16 @@ async function select(w, row){
       setLoad('loading', 'Loading piano samples… '+pct+'%', pct);
     });
     if(my !== token) return;
-    if(r.total && r.failed > r.total*0.2) throw new Error('sample gagal dimuat ('+r.failed+'/'+r.total+') — cek koneksi, lalu tekan play untuk coba lagi');
+    if(r.total && r.failed === r.total) console.warn('[midi-hero] semua sample piano gagal dimuat (CDN diblokir?)');
     ready = true; setLoad('idle');
     if(autoPlay) play();
   }catch(err){
-    if(my === token){ setLoad('error', 'Failed to load — press play to retry'); statusEl.title = String(err && err.message || err); console.error('[midi-hero]', err); }
+    if(my === token){ setLoad('error', 'Failed to load MIDI — press play to retry'); statusEl.title = String(err && err.message || err); console.error('[midi-hero]', err); }
   }
 }
 
 /* pilih otomatis karya pertama yang punya midi */
-const first = rows.find(r=>r.w.midi);
+const first = rows.find(r=>r.w.midi && r.w.midi !== '#');
 if(first){ select(first.w, first.row); first.row.scrollIntoView({block:'nearest'}); }
 
 /* ---------- render loop ---------- */
