@@ -13,6 +13,8 @@
      catno       -> nomor katalog, misal "DN.1"
      title       -> judul karya
      cover       -> path gambar cover (dipakai di list & popup)
+     midi        -> (opsional) path file .mid dari root situs, misal "midi/dn54.mid".
+                    Kalau diisi, karya tampil bisa diputar di visualizer landing page.
      desc        -> deskripsi/cerita karya
      soundcloud  -> URL embed player SoundCloud.
                     Cara ambil: buka track di SoundCloud > tombol
@@ -626,6 +628,7 @@ const WORKS = [
     catno: "DN.54",
     title: "Beloved Waltz",
     cover: "../img/covers/art-dn54.jpg",
+    midi: "midi/dn54.mid",
     desc: "I wrote this piece thinking about the feeling of being in love when even the simplest moments feel a little more beautiful. A gentle waltz in C-sharp minor, carrying a warm sense of happiness, tenderness, and the quiet joy of having someone you truly love in your heart. 8/2026",
     soundcloud: "",
     musescore: "https://musescore.com/user/118322597/scores/37069763",

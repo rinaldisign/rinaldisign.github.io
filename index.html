@@ -48,17 +48,18 @@
     <div class="hero-scrim"></div>
     <div id="fireflies"></div>
 
+    <div class="mv-stage" id="mvStage"></div>
+
     <div class="hero-content">
       <span class="eyebrow">Solo Piano · Original Works</span>
       <h1>RINALDISIGN</h1>
-
-      <div class="seal">
-        <img class="enso" id="ensoMark" src="img/enso.png" alt="">
-        <img class="logo" src="img/logo.png" alt="Rinaldisign logo">
-      </div>
-
       <p class="tagline">Inner melodies, refined into piano compositions <br>A journey of composing original music.</p>
     </div>
+
+    <aside class="mv-panel" id="mvPanel" aria-label="MIDI playlist">
+      <div class="mv-head"><span>Play</span><span id="mvStatus"></span></div>
+      <div class="mv-list" id="mvList"></div>
+    </aside>
 
     <div class="scroll-cue">
       <span>Scroll</span>
@@ -183,6 +184,8 @@
 </footer>
 
 <script src="works/js/works-data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/midi-hero.js"></script>
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -264,27 +267,6 @@
     } else {
       opening.style.display = 'none';
     }
-  })();
-
-  /* ---------- ensō ink-stroke reveal ---------- */
-  (function(){
-    const mark = document.getElementById('ensoMark');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) { mark.style.setProperty('--reveal', '100%'); return; }
-
-    const duration = 1600;
-    const delay = 300;
-    function ease(t){ return 1 - Math.pow(1 - t, 3); }
-
-    setTimeout(function(){
-      const start = performance.now();
-      function step(now){
-        const t = Math.min((now - start) / duration, 1);
-        mark.style.setProperty('--reveal', (ease(t) * 100) + '%');
-        if (t < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }, delay);
   })();
 
   /* ---------- nav solidify on scroll ---------- */

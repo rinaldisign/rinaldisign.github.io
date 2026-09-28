@@ -183,7 +183,7 @@ body::before{
   min-height:100vh;
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   overflow:hidden;
   isolation:isolate;
 }
@@ -218,9 +218,10 @@ body::before{
 
 .hero-content{
   position:relative; z-index:3;
-  text-align:center;
-  max-width:640px;
-  padding:0 24px;
+  text-align:left;
+  max-width:460px;
+  padding:0 0 0 6vw;
+  pointer-events:none;
 }
 
 .eyebrow{
@@ -251,7 +252,7 @@ body::before{
   line-height:1.65;
   color:var(--paper-dim);
   max-width:420px;
-  margin:0 auto;
+  margin:0;
   opacity:0;
   animation:riseIn .9s var(--ease) 1.8s forwards;
 }
@@ -907,4 +908,71 @@ footer .foot-links a:hover{ color:var(--gold-soft); }
     transition-duration:.001ms !important;
   }
   .seal .enso{ mask-image:none; -webkit-mask-image:none; }
+}
+
+/* =========================================================
+   MIDI HERO — 3D visualizer + mini playlist
+   ========================================================= */
+.mv-stage{ position:absolute; inset:0; z-index:1; touch-action:pan-y; cursor:grab; }
+.mv-stage:active{ cursor:grabbing; }
+.mv-stage canvas{ display:block; width:100%; height:100%; }
+
+.mv-panel{
+  position:absolute; z-index:4;
+  right:5vw; top:50%; transform:translateY(-50%);
+  width:250px; max-height:60vh;
+  display:flex; flex-direction:column;
+  font-size:11px; letter-spacing:.04em;
+  opacity:0; animation:riseIn .9s var(--ease) 2s forwards;
+}
+.mv-head{
+  display:flex; justify-content:space-between;
+  padding-bottom:8px; margin-bottom:2px;
+  font-size:9.5px; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--gold-soft); border-bottom:1px solid var(--line);
+}
+.mv-head #mvStatus{ color:var(--mist); letter-spacing:.1em; }
+.mv-list{
+  overflow-y:auto; overscroll-behavior:contain;
+  scrollbar-width:thin; scrollbar-color:var(--line) transparent;
+}
+.mv-row{
+  position:relative;
+  display:flex; align-items:center; gap:10px;
+  padding:7px 0; min-height:30px;
+  color:var(--paper-dim); cursor:pointer;
+  border-bottom:1px solid rgba(243,238,225,.05);
+  transition:color .3s var(--ease);
+}
+.mv-row:hover{ color:var(--paper); }
+.mv-row.is-off{ opacity:.35; cursor:default; }
+.mv-row.is-off:hover{ color:var(--paper-dim); }
+.mv-cat{ flex:0 0 38px; font-family:var(--font-mono); font-size:10px; color:var(--mist); }
+.mv-title{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mv-row.is-active{ color:#39ff14; }
+.mv-row.is-active .mv-cat{ color:#39ff14; }
+.mv-row.is-active .mv-title{ text-shadow:0 0 8px rgba(57,255,20,.6); }
+
+.mv-ctl{ display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+.mv-ctl button, .mv-ctl a{
+  all:unset; box-sizing:border-box; cursor:pointer;
+  width:22px; height:22px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--paper-dim); border-radius:50%;
+  transition:color .25s, background .25s;
+}
+.mv-ctl button:hover, .mv-ctl a:hover{ color:#39ff14; background:rgba(57,255,20,.08); }
+.mv-ctl button.on{ color:#39ff14; }
+.mv-ctl svg{ width:12px; height:12px; fill:currentColor; }
+.mv-ctl .rep svg{ fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.mv-ctl .inf{ font-family:var(--font-display); font-style:italic; font-size:12px; border:1px solid currentColor; width:15px; height:15px; margin-left:4px; }
+
+.mv-prog{ position:absolute; left:0; right:0; bottom:-1px; height:7px; cursor:pointer; }
+.mv-prog::before{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--line); }
+.mv-prog i{ position:absolute; left:0; bottom:0; height:1px; width:0; background:#39ff14; box-shadow:0 0 6px #39ff14; }
+
+@media (max-width:860px){
+  .hero{ align-items:flex-start; }
+  .hero-content{ padding:110px 22px 0; max-width:100%; }
+  .mv-panel{ top:auto; bottom:84px; right:auto; left:22px; width:calc(100% - 44px); max-height:26vh; transform:none; }
 }
