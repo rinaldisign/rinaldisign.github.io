@@ -352,14 +352,32 @@ function schedTick(t){
   }
 }
 function killAudio(){ if(actx){ actx.close(); actx = null; } }
+
+/* ---------- keep screen on (mobile) ---------- */
+let wakeLock = null;
+async function lockScreen(){
+  try{
+    if(!('wakeLock' in navigator) || wakeLock) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+  }catch(e){ wakeLock = null; }
+}
+function unlockScreen(){ if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; } }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && playing) lockScreen(); });
+
+/* buka izin audio browser mobile sekali, agar auto-next tanpa tap tetap bunyi */
+['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev, function unlock(){
+  try{ const c = new (window.AudioContext||window.webkitAudioContext)(); c.resume(); c.close(); }catch(e){}
+  ['pointerdown','touchend','click'].forEach(x=>document.removeEventListener(x, unlock, true));
+}, true));
 function play(){
-  if(loadState === 'error' && currentRow){ const r = currentRow; currentRow = null; autoPlay = true; select(currentW, r); return; }
+  if(loadState === 'error' && currentRow){ const r = currentRow; currentRow = null; select(currentW, r, true); return; }
   if(!ready){ autoPlay = true; syncBtn(); return; }
   autoPlay = false;
   if(pausedAt >= total-0.05) pausedAt = 0;
   actx = actx || new (window.AudioContext||window.webkitAudioContext)();
   if(actx.state === 'suspended') actx.resume();
-  playing = true;
+  playing = true; lockScreen();
   playStart = actx.currentTime - pausedAt;
   resetPtrs(pausedAt);
   for(let i=0;i<startPtr;i++){ const n = notes[i]; if(n.end > pausedAt) scheduleNote({...n, dur:n.end-pausedAt}, playStart+pausedAt); }
@@ -368,7 +386,7 @@ function play(){
 function pause(){
   autoPlay = false;
   if(actx) pausedAt = actx.currentTime - playStart;
-  playing = false; killAudio(); syncBtn();
+  playing = false; killAudio(); unlockScreen(); syncBtn();
 }
 function seek(t){
   const was = playing;
@@ -435,10 +453,10 @@ WORKS.slice().reverse().forEach(w=>{
 });
 
 let token = 0, currentRow = null;
-async function select(w, row){
+async function select(w, row, auto){
   if(row === currentRow) return;
   const my = ++token; currentW = w;
-  pause(); ready = false; pausedAt = 0; total = 0; notes = []; activeSet.clear();
+  pause(); autoPlay = !!auto; ready = false; pausedAt = 0; total = 0; notes = []; activeSet.clear();
   buildNoteMeshes([]);
   if(currentRow) currentRow.classList.remove('is-active');
   currentRow = row; row.classList.add('is-active');
@@ -477,6 +495,15 @@ async function select(w, row){
   }
 }
 
+function playNext(){
+  const list = rows.filter(r=>r.w.midi && r.w.midi !== '#');
+  if(list.length < 2) return;
+  const i = list.findIndex(r=>r.row === currentRow);
+  const n = list[(i+1) % list.length];
+  select(n.w, n.row, true);
+  n.row.scrollIntoView({block:'nearest'});
+}
+
 /* pilih otomatis karya pertama yang punya midi */
 const first = rows.find(r=>r.w.midi && r.w.midi !== '#');
 if(first){ select(first.w, first.row); first.row.scrollIntoView({block:'nearest'}); }
@@ -496,7 +523,7 @@ function frame(){
     schedTick(t);
     if(t >= total + 0.5){
       killAudio(); playing = false; pausedAt = total; t = total;
-      if(loop){ pausedAt = 0; play(); t = 0; } else syncBtn();
+      if(loop){ pausedAt = 0; play(); t = 0; } else { unlockScreen(); syncBtn(); playNext(); }
     }
   }
   if(!visible) return;
