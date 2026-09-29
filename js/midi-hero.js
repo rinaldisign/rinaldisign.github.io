@@ -212,6 +212,77 @@ function buildNoteMeshes(notes){
   }
 }
 
+/* ---------- kunang-kunang: muncul halus saat note menyentuh tuts ---------- */
+const FLY_MOBILE = matchMedia('(pointer:coarse)').matches || innerWidth < 768;
+const FLY_N = FLY_MOBILE ? 240 : 480;            // ukuran pool partikel
+const FLY_BUDGET = FLY_MOBILE ? 8 : 16;          // maks partikel baru per frame
+const FLY_T0 = performance.now()/1000;
+const flyPos = new Float32Array(FLY_N*3);
+const flyData = new Float32Array(FLY_N*4);       // birth, life, seed, size
+for(let i=0;i<FLY_N;i++) flyData[i*4] = -1e4;
+const flyGeo = new THREE.BufferGeometry();
+const flyPosAttr = new THREE.BufferAttribute(flyPos, 3);
+const flyDataAttr = new THREE.BufferAttribute(flyData, 4);
+flyGeo.setAttribute('position', flyPosAttr);
+flyGeo.setAttribute('aData', flyDataAttr);
+const flyMat = new THREE.ShaderMaterial({
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+  uniforms:{ uTime:{value:0}, uScale:{value:600} },
+  vertexShader:`
+    attribute vec4 aData;
+    uniform float uTime, uScale;
+    varying float vAlpha; varying vec3 vColor;
+    void main(){
+      float life = aData.y, seed = aData.z, size = aData.w;
+      float age = uTime - aData.x, t = age/life;
+      if(t < 0. || t > 1.){ gl_Position = vec4(2.,2.,2.,1.); gl_PointSize = 0.; vAlpha = 0.; vColor = vec3(0.); return; }
+      float r1 = fract(seed*17.13), r2 = fract(seed*91.7), r3 = fract(seed*53.3), r4 = fract(seed*7.77);
+      float ph = seed*40., ph2 = seed*23.;
+      vec3 p = position;
+      p.y += (0.30 + 0.45*r1) * age * (1. - 0.45*t);
+      p.y += (sin(age*1.3 + ph2) - sin(ph2)) * 0.10;
+      float w = 0.55 + r2*0.7, amp = 0.30 + 0.40*r3;
+      p.x += (sin(age*w + ph) - sin(ph)) * amp;
+      p.z += (cos(age*(w*0.8) + ph2) - cos(ph2)) * amp * 0.8;
+      float blink = 0.5 + 0.5*sin(age*(2.0 + r4*2.6) + ph);
+      blink = 0.25 + 0.75*blink*blink;
+      float env = smoothstep(0.0, 0.14, t) * (1. - smoothstep(0.5, 1.0, t));
+      vAlpha = env * blink * 0.75;
+      vColor = mix(vec3(0.80,1.0,0.42), vec3(0.30,1.0,0.16), r2);
+      vec4 mv = modelViewMatrix * vec4(p, 1.);
+      gl_Position = projectionMatrix * mv;
+      gl_PointSize = min(size * uScale / -mv.z, 48.);
+    }`,
+  fragmentShader:`
+    varying float vAlpha; varying vec3 vColor;
+    void main(){
+      float d = length(gl_PointCoord - 0.5) * 2.;
+      float a = exp(-d*d*5.) * (1. - smoothstep(0.8, 1.0, d)) + exp(-d*d*28.) * 0.55;
+      gl_FragColor = vec4(vColor, a * vAlpha);
+    }`
+});
+const flyPoints = new THREE.Points(flyGeo, flyMat);
+flyPoints.frustumCulled = false;
+scene.add(flyPoints);
+let flyHead = 0, flyBudget = FLY_BUDGET, flyDirty = false;
+function emitFireflies(note, now){
+  const g = KEY_INFO[note.note]; if(!g) return;
+  const cnt = FLY_MOBILE ? 2 + (Math.random() < note.vel/127 ? 1 : 0)
+                         : 3 + Math.floor(Math.random()*(1 + note.vel/127*2));
+  const x = g.x - KB_CENTER;
+  for(let k=0;k<cnt && flyBudget>0;k++, flyBudget--){
+    const i = flyHead; flyHead = (flyHead+1) % FLY_N;
+    flyPos[i*3]   = x + (Math.random()-0.5)*0.6;
+    flyPos[i*3+1] = 0.6 + Math.random()*0.3;
+    flyPos[i*3+2] = HIT_Z + Math.random()*3.2;
+    flyData[i*4]   = now;
+    flyData[i*4+1] = 2.6 + Math.random()*2.4;
+    flyData[i*4+2] = Math.random();
+    flyData[i*4+3] = 0.28 + Math.random()*0.32;
+    flyDirty = true;
+  }
+}
+
 /* ---------- orbit, zoom (wheel & pinch), auto-rotate ---------- */
 let dragging=false, lx=0, ly=0, pinchDist=0;
 let lastInput = -1e9;                 // waktu interaksi terakhir (detik)
@@ -528,7 +599,15 @@ function frame(){
   }
   if(!visible) return;
 
-  while(startPtr < notes.length && notes[startPtr].start <= t){ activeSet.add(notes[startPtr]); startPtr++; }
+  const flyNow = performance.now()/1000 - FLY_T0;
+  flyBudget = FLY_BUDGET; flyDirty = false;
+  while(startPtr < notes.length && notes[startPtr].start <= t){
+    if(playing) emitFireflies(notes[startPtr], flyNow);
+    activeSet.add(notes[startPtr]); startPtr++;
+  }
+  if(flyDirty){ flyPosAttr.needsUpdate = true; flyDataAttr.needsUpdate = true; }
+  flyMat.uniforms.uTime.value = flyNow;
+  flyMat.uniforms.uScale.value = renderer.domElement.height / (2*Math.tan(camera.fov*Math.PI/360));
   for(const n of Array.from(activeSet)) if(n.end < t) activeSet.delete(n);
 
   for(const k in keyMeshes){ const m = keyMeshes[k]; m.position.y = m.userData.baseY; m.material.emissiveIntensity = 0; }
