@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="3Dmidi/core/engine.css">
 </head>
 <body>
 
@@ -185,7 +186,13 @@
 
 <script src="works/js/works-data.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/midi-hero.js"></script>
+<!-- MIDI 3D visualizer: engine (core/) + tema (neon-green/, fireworks/) — lihat 3Dmidi/README.md -->
+<script src="3Dmidi/core/namespace.js"></script>
+<script src="3Dmidi/themes.js"></script>
+<script src="3Dmidi/core/midi-parser.js"></script>
+<script src="3Dmidi/core/keyboard.js"></script>
+<script src="3Dmidi/core/piano-audio.js"></script>
+<script src="3Dmidi/core/engine.js"></script>
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
