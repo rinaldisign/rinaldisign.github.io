@@ -12,5 +12,7 @@ window.MIDI3D.manifest = [
   { id:'neon-green', label:'Neon Green', accent:'#39ff14', accentRGB:'57,255,20',
     files:['neon-green/theme.js'] },
   { id:'fireworks',  label:'Fireworks',  accent:'#ffb15c', accentRGB:'255,177,92',
-    files:['fireworks/shaders.js','fireworks/bloom.js','fireworks/theme.js'] }
+    files:['fireworks/shaders.js','fireworks/bloom.js','fireworks/theme.js'] },
+  { id:'chord-connector', label:'Chord Connector', accent:'#39ff14', accentRGB:'57,255,20',
+    files:['chord-connector/theme.js'] }
 ];

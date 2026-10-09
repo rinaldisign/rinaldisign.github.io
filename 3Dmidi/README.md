@@ -11,6 +11,7 @@
 │   ├── engine.js        scene, kamera, playback, playlist, tombol Theme
 │   └── engine.css       gaya tombol Theme & aksen panel
 ├── neon-green/theme.js  tema 1: bar jatuh + kunang-kunang (tampilan asli)
+├── chord-connector/theme.js  tema 3: 88 gelembung not + benang akor
 └── fireworks/           tema 2: kembang api
     ├── theme.js         roket, jenis ledakan, cahaya, parameter (objek CFG)
     ├── shaders.js       GLSL percikan (fisika di GPU) + bloom
@@ -33,3 +34,7 @@ Hook (semua opsional kecuali yang bertanda *):
 waktu naik roket). Uji tanpa lagu di console: `MIDI3D.fwTest(60, 110, 2)` (note, velocity, durasi).
 
 Pilihan tema tersimpan di localStorage (`mv3d-theme`).
+
+## Tweak Chord Connector
+`chord-connector/theme.js` → objek `CFG` (ukuran gelembung, kecepatan putar `spin`, opacity ikatan/benang,
+`idleLabel` untuk menampilkan nama not samar saat idle). Uji tanpa lagu: `MIDI3D.ccHold = [48,55,64]` (lepas: `= null`).
