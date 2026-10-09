@@ -36,7 +36,7 @@ const sparkVert = /* glsl */`
     return mix(hot, iColB.rgb, smoothstep(0.42, 1.0, t));
   }
   float envAt(float t){
-    float o = 1.0 - smoothstep(0.50, 1.0, t);
+    float o = 1.0 - smoothstep(0.38, 0.95, t);
     return smoothstep(0.0, 0.02, t) * o * o;
   }
 
@@ -196,7 +196,9 @@ const composite = /* glsl */`
   void main(){
     vec3 c = texture2D(tLayer, vUv).rgb + texture2D(tBloom, vUv).rgb * uBloom;
     c *= uGain;
-    c = 1.0 - exp(-c * 1.35);               // tone-map lembut: highlight menyala ke putih, warna tetap jenuh
+    float m = max(max(c.r, c.g), c.b);
+    c *= (1.0 - exp(-m * 1.35)) / max(m, 1e-4);   // tone-map per-kecerahan: tumpukan cahaya tetap berwarna, tidak jadi putih
+    c = mix(c, vec3(max(max(c.r, c.g), c.b)), 0.18 * smoothstep(0.6, 1.0, max(max(c.r, c.g), c.b)));   // hanya inti terpanas yang memutih
     gl_FragColor = vec4(c, max(max(c.r, c.g), c.b));
   }
 `;

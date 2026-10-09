@@ -34,6 +34,8 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
     heightMin:   7,  heightMax: 16,       // tinggi ledakan (acak) di atas tuts
     riseMin:     1.0, riseMax:  1.9,      // waktu naik roket (detik, acak)
     maxBurstsPerFrame: 3,
+    loadSoft:    mobile ? 1100 : 2400,    // di atas ini ledakan baru otomatis diperkecil (cegah tumpang tindih → putih)
+    loadHard:    mobile ? 2200 : 4600,    // di atas ini ledakan baru hanya jadi kilatan kecil
     shedPerFrame: mobile ? 10 : 24        // percikan ekor roket per frame (total)
   };
   const rand = Math.random;
@@ -92,9 +94,10 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
   const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false;
   const pScene = new THREE.Scene(); pScene.add(mesh);
 
-  let head = 0, dLo = 1e9, dHi = -1, wrapped = false;
+  let head = 0, dLo = 1e9, dHi = -1, wrapped = false, putCount = 0;
   const SPARK_KIND = {spark:0, flash:1, strobe:2, rocket:3};
   function put(ox,oy,oz, vx,vy,vz, birth, life, kind, size, ca, cb, drag, grav, trail, rate, flick){
+    putCount++;
     const i = head; head = (head+1) % POOL;
     if(i === 0 && dHi >= 0) wrapped = true;
     if(i < dLo) dLo = i; if(i > dHi) dHi = i;
@@ -141,6 +144,7 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
     return 'peony';
   }
 
+  const live = [];        // ledakan yang masih hidup: {t, life, n} → perkiraan beban layar
   const rockets = [];     // roket yang sedang naik
   const pending = [];     // ledakan tertunda (double-break)
   const glows = [];       // cahaya ledakan → menyinari keyboard
@@ -226,21 +230,38 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
     }
   }
 
+  // beban layar saat ini = jumlah percikan hidup (berbobot sisa umur)
+  function liveLoad(clk){
+    let L = 0;
+    for(let i=live.length-1;i>=0;i--){
+      const b = live[i], a = (clk - b.t)/b.life;
+      if(a >= 1){ live.splice(i,1); continue; }
+      L += b.n * (1 - a);
+    }
+    return L;
+  }
+
   function explode(r, c, clk, spec){
-    const Q = CFG.quality, f = spec.f, R = spec.R, pal = spec.pal, pal2 = spec.pal2, type = spec.type;
+    // anti "putih semua": makin padat layar, makin kecil ledakan baru
+    const load = liveLoad(clk);
+    const crowd = clamp((load - CFG.loadSoft) / (CFG.loadHard - CFG.loadSoft), 0, 1);   // 0 lega … 1 penuh
+    const Q = CFG.quality * lerp(1, 0.22, crowd), f = spec.f, R = spec.R * lerp(1, 0.8, crowd);
+    const pal = spec.pal, pal2 = spec.pal2, type = spec.type;
+    const put0 = putCount;
     const cnt = (a,b)=>Math.max(8, Math.round(lerp(a,b,f)*Q));
     const size = lerp(0.105, 0.145, f);
 
-    // flash utama + cahaya langit
-    flash(c[0],c[1],c[2], clk, 0.40, R*0.50, mix3(WHITE, pal.a, 0.5), pal.b, 0.55, 3.0);
-    flash(c[0],c[1],c[2], clk, 1.80, R*1.7, pal.a, pal.b, 0.07, 1.6);
+    // flash utama + cahaya langit (cahaya langit dilewati bila layar sudah padat)
+    flash(c[0],c[1],c[2], clk, 0.34, R*0.50, mix3(WHITE, pal.a, 0.5), pal.b, 0.55*lerp(1,0.5,crowd), 3.0);
+    if(crowd < 0.35) flash(c[0],c[1],c[2], clk, 1.0, R*1.6, pal.a, pal.b, 0.05, 1.8);
+    if(crowd >= 1){ glows.push({t:clk, x:c[0], y:c[1], z:c[2], r:pal.a[0], g:pal.a[1], b:pal.a[2], e:0.3}); return; }
 
     switch(type){
       case 'chrys':
-        shell(c, clk, R, cnt(220,520), pal.a, pal.b, {k:1.9, life:3.0, trail:0.55, grav:1.0, size, flick:.4, strobe:.22});
+        shell(c, clk, R, cnt(220,520), pal.a, pal.b, {k:1.9, life:2.7, trail:0.5, grav:1.0, size, flick:.4, strobe:.22});
         break;
       case 'willow':
-        shell(c, clk, R*0.92, cnt(170,340), GOLD.a, [0.62,0.17,0.02], {k:1.3, life:4.3, trail:0.85, grav:1.35, size:size*0.95, flick:.25, spMin:.55, spMax:1.05});
+        shell(c, clk, R*0.92, cnt(170,340), GOLD.a, [0.62,0.17,0.02], {k:1.3, life:3.5, trail:0.8, grav:1.35, size:size*0.95, flick:.25, spMin:.55, spMax:1.05});
         break;
       case 'ring':
         ring(c, clk, R, cnt(70,130), pal.a, pal.b, {k:2.1, life:2.6, trail:0.30, grav:1.0, size:size*1.1, flick:.3});
@@ -248,10 +269,10 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
         break;
       case 'palm':
         palm(c, clk, R, 8 + Math.floor(rand()*4), Math.max(3, Math.round((6+f*4)*Math.sqrt(Q))), spec.pal.a, spec.pal.b,
-             {k:1.75, life:3.1, trail:0.6, grav:0.85, size:size*1.05, flick:.3});
+             {k:1.75, life:2.8, trail:0.55, grav:0.85, size:size*1.05, flick:.3});
         break;
       case 'strobe':
-        shell(c, clk, R, cnt(110,260), pal.a.map(x=>lerp(x,1,.35)), pal.b, {k:2.0, life:3.0, trail:0.08, grav:0.95, size:size*0.9, flick:0, strobe:1});
+        shell(c, clk, R, cnt(110,260), pal.a.map(x=>lerp(x,1,.35)), pal.b, {k:2.0, life:2.7, trail:0.08, grav:0.95, size:size*0.9, flick:0, strobe:1});
         break;
       default: // peony
         shell(c, clk, R, cnt(140,420), pal.a, pal.b, {k:2.1, life:2.5, trail:0.30, grav:1.0, size, flick:.35, strobe:0});
@@ -264,7 +285,8 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
       pending.push({ at:clk+0.18+rand()*0.12, c:[c[0],c[1],c[2]],
         spec:{ type:'peony', f:f*0.7, R:R*0.52, pal:pal2, pal2:pal, second:true }});
     }
-    glows.push({t:clk, x:c[0], y:c[1], z:c[2], r:pal.a[0], g:pal.a[1], b:pal.a[2], e:0.55 + f*1.6});
+    live.push({ t:clk, life:3.0, n:putCount - put0 });
+    glows.push({t:clk, x:c[0], y:c[1], z:c[2], r:pal.a[0], g:pal.a[1], b:pal.a[2], e:(0.55 + f*1.6)*lerp(1,0.5,crowd)});
   }
 
   function clearAll(){
@@ -272,7 +294,7 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
     for(const k in attrs) attrs[k].needsUpdate = true;
     for(const k in attrs){ attrs[k].updateRange.offset = 0; attrs[k].updateRange.count = -1; }
     dLo = 1e9; dHi = -1; wrapped = false;
-    rockets.length = 0; pending.length = 0; glows.length = 0;
+    rockets.length = 0; pending.length = 0; glows.length = 0; live.length = 0;
   }
 
   /* ---------- hook tema ---------- */
@@ -353,6 +375,7 @@ window.MIDI3D.registerTheme('fireworks', function create(ctx){
 
       // uniform shader
       const rw = post.ok ? post.width : renderer.domElement.width, rh = post.ok ? post.height : renderer.domElement.height;
+      mat.uniforms.uExposure.value = 1 / (1 + 0.55*clamp(liveLoad(clk)/CFG.loadHard, 0, 1.5));   // layar padat → sedikit redup
       mat.uniforms.uTime.value = clk;
       mat.uniforms.uRes.value.set(rw, rh);
       mat.uniforms.uScale.value = rh / (2*Math.tan(camera.fov*Math.PI/360));
