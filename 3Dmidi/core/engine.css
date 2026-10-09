@@ -1,0 +1,73 @@
+/* =========================================================
+   MIDI3D — gaya milik engine: tombol Theme, transisi tema,
+   dan aksen panel playlist yang mengikuti tema aktif.
+   (--mv-accent / --mv-accent-rgb diisi engine pada #hero)
+   ========================================================= */
+.hero{ --mv-accent:#39ff14; --mv-accent-rgb:57,255,20; }
+
+/* transisi saat ganti tema */
+.mv-stage canvas{ transition:opacity .22s ease; }
+.mv-stage.mv-swap canvas{ opacity:0; }
+
+/* ---------- tombol Theme (pojok kanan atas area 3D) ---------- */
+.mv-theme{
+  position:absolute; z-index:6;
+  top:88px; right:5vw;
+  font-size:9.5px; letter-spacing:.28em; text-transform:uppercase;
+  opacity:0; animation:riseIn .9s var(--ease) 2s forwards;
+}
+.mv-theme-btn{
+  all:unset; box-sizing:border-box; cursor:pointer;
+  display:flex; align-items:center; gap:9px;
+  padding:8px 13px 8px 11px;
+  color:var(--gold-soft);
+  background:rgba(7,9,10,.45);
+  border:1px solid var(--line); border-radius:999px;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  transition:color .25s, border-color .25s, background .25s, box-shadow .25s;
+}
+.mv-theme-btn svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
+.mv-theme-btn svg circle:nth-child(n+2){ fill:currentColor; stroke:none; }
+.mv-theme-btn:hover, .mv-theme.open .mv-theme-btn{
+  color:var(--mv-accent); border-color:rgba(var(--mv-accent-rgb),.55);
+  background:rgba(7,9,10,.62); box-shadow:0 0 14px rgba(var(--mv-accent-rgb),.18);
+}
+.mv-theme-btn:focus-visible{ outline:1px solid var(--mv-accent); outline-offset:2px; }
+.mv-theme.busy .mv-theme-btn{ cursor:progress; opacity:.7; }
+
+.mv-theme-menu{
+  list-style:none; position:absolute; right:0; top:calc(100% + 8px);
+  min-width:176px; padding:6px;
+  background:rgba(7,9,10,.82); border:1px solid var(--line); border-radius:8px;
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  opacity:0; transform:translateY(-4px); pointer-events:none;
+  transition:opacity .2s var(--ease), transform .2s var(--ease);
+}
+.mv-theme.open .mv-theme-menu{ opacity:1; transform:none; pointer-events:auto; }
+.mv-theme-menu li{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px; border-radius:5px; cursor:pointer;
+  color:var(--paper-dim); letter-spacing:.18em;
+  transition:color .2s, background .2s;
+}
+.mv-theme-menu li i{ font-style:normal; font-family:var(--font-mono); color:var(--mist); letter-spacing:0; }
+.mv-theme-menu li span{ flex:1; }
+.mv-theme-menu li:hover, .mv-theme-menu li:focus-visible{ color:var(--paper); background:rgba(243,238,225,.06); outline:none; }
+.mv-theme-menu li.is-active{ color:var(--mv-accent); }
+.mv-theme-menu li.is-active i{ color:var(--mv-accent); }
+.mv-theme-menu li.is-active::after{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--mv-accent); box-shadow:0 0 8px var(--mv-accent);
+}
+
+@media (max-width:860px){
+  .mv-theme{ top:76px; right:22px; }
+}
+
+/* ---------- aksen panel playlist mengikuti tema ---------- */
+.mv-row.is-active, .mv-row.is-active .mv-cat{ color:var(--mv-accent); }
+.mv-row.is-active .mv-title{ text-shadow:0 0 8px rgba(var(--mv-accent-rgb),.6); }
+.mv-ctl button:hover, .mv-ctl a:hover{ color:var(--mv-accent); background:rgba(var(--mv-accent-rgb),.08); }
+.mv-ctl button.on, .mv-ctl button.busy{ color:var(--mv-accent); }
+.mv-prog i{ background:var(--mv-accent); box-shadow:0 0 6px var(--mv-accent); }
+.mv-load-bar i{ background:var(--mv-accent); box-shadow:0 0 6px var(--mv-accent); }
