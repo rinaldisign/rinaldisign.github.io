@@ -21,12 +21,13 @@ window.MIDI3D.registerTheme('chord-connector', function create(ctx){
 
   const CFG = {
     bubbleR:     1.15,     // jari-jari gelembung (unit dunia)
-    center:      [0, 13, -8],   // pusat molekul
+    center:      [0, 13.5, -8], // pusat molekul
     spreadX:     23,       // lebar sebaran (nada rendah ←→ tinggi)
-    minDist:     4.5,      // jarak minimum antar gelembung
+    minDist:     4.1,      // jarak minimum antar gelembung
     bondMaxDist: 7.6,      // ikatan hanya antar gelembung yang cukup dekat
-    spin:        0.045,    // rad/detik, putaran molekul
-    tumble:      0.20,     // rad, ayunan miring molekul
+    spin:        0.07,     // rad/detik, putaran VERTIKAL (poros = sumbu panjang, sejajar keyboard)
+    tilt:        0.05,     // rad, goyangan miring sangat kecil (panjang tetap sejajar keyboard)
+    radiusMax:   8.8,      // batas jari-jari sebaran di y/z → saat berputar tidak pernah menembus keyboard
     driftAmp:    [0.55, 1.0],   // amplitudo gerak acak tiap gelembung
     driftSpeed:  [0.10, 0.32],  // rad/detik
     idleAlpha:   0.60,     // kecerahan gelembung saat idle
@@ -65,6 +66,8 @@ window.MIDI3D.registerTheme('chord-connector', function create(ctx){
     for(let i=0;i<N;i++){                             // pegas: jaga urutan x & kompak di y/z
       const p = base[i], tx = lerp(-CFG.spreadX, CFG.spreadX, i/(N-1));
       p[0] += (tx-p[0])*0.08; p[1] *= 0.992; p[2] *= 0.992;
+      const rr = Math.hypot(p[1], p[2]);
+      if(rr > CFG.radiusMax){ const k = CFG.radiusMax/rr; p[1] *= k; p[2] *= k; }
     }
   }
 
@@ -224,16 +227,17 @@ window.MIDI3D.registerTheme('chord-connector', function create(ctx){
   const wp = new Float32Array(N*3);              // posisi dunia hasil animasi
 
   function updatePositions(clk){
-    const th = clk*CFG.spin, ph = CFG.tumble*Math.sin(clk*0.11) + 0.05, rl = 0.6*CFG.tumble*Math.sin(clk*0.07 + 1.0);
-    const cy = Math.cos(th), sy = Math.sin(th), cx = Math.cos(ph), sx = Math.sin(ph), cz = Math.cos(rl), sz = Math.sin(rl);
+    // putar HANYA mengelilingi sumbu X (sumbu panjang molekul = arah keyboard): gelembung naik-turun & maju-mundur,
+    // sebaran tetap memanjang kiri-kanan dan tidak menyilang keyboard
+    const ph = clk*CFG.spin, rl = CFG.tilt*Math.sin(clk*0.07 + 1.0);
+    const cx = Math.cos(ph), sx = Math.sin(ph), cz = Math.cos(rl), sz = Math.sin(rl);
     for(let i=0;i<N;i++){
       const b = base[i], d = drift[i];
       let x = b[0] + d.amp*Math.sin(clk*d.w[0]+d.ph[0]);
       let y = b[1] + d.amp*Math.sin(clk*d.w[1]+d.ph[1]);
       let z = b[2] + d.amp*Math.sin(clk*d.w[2]+d.ph[2]);
-      let x1 =  x*cy + z*sy, z1 = -x*sy + z*cy;           // putar sumbu Y
-      let y1 =  y*cx - z1*sx, z2 = y*sx + z1*cx;          // miring sumbu X
-      let x2 =  x1*cz - y1*sz, y2 = x1*sz + y1*cz;        // goyang sumbu Z
+      const y1 = y*cx - z*sx, z2 = y*sx + z*cx;           // putar sumbu X
+      const x2 = x*cz - y1*sz, y2 = x*sz + y1*cz;         // goyang kecil sumbu Z
       wp[i*3]   = CFG.center[0] + x2;
       wp[i*3+1] = CFG.center[1] + y2;
       wp[i*3+2] = CFG.center[2] + z2;
